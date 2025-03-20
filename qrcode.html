@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code 掃描器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        video { width: 100%; max-width: 400px; }
+        canvas { display: none; }
+        #result { margin-top: 10px; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <h1>QR Code 掃描器</h1>
+    <button onclick="startScan()">開啟攝像頭</button>
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
+    <p id="result">掃描結果：<span id="output"></span></p>
+    
+    <script>
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let context = canvas.getContext('2d');
+        let output = document.getElementById('output');
+        let scanning = false;
+        let stream;
+        
+        function startScan() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(function(mediaStream) {
+                    stream = mediaStream;
+                    video.srcObject = mediaStream;
+                    scanning = true;
+                    scanFrame();
+                })
+                .catch(function(error) {
+                    alert('無法開啟攝像頭: ' + error.message);
+                });
+        }
+        
+        function scanFrame() {
+            if (!scanning) return;
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            let imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            let code = jsQR(imageData.data, imageData.width, imageData.height);
+            
+            if (code) {
+                output.textContent = code.data;
+                scanning = false;
+                video.srcObject.getTracks().forEach(track => track.stop());
+            } else {
+                requestAnimationFrame(scanFrame);
+            }
+        }
+    </script>
+</body>
+</html>
